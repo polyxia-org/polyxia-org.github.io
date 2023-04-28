@@ -3,5 +3,12 @@
     "type": "separator",
     "title": "Getting Started"
   },
-  "index": "Introduction"
+  "index": "Introduction",
+  "quickstart": "Quick start",
+  "-- Components --": {
+    "type": "separator",
+    "title": "Components"
+  },
+  "nlu": "NLU",
+  "assistant": "Assistant"
 }

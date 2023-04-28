@@ -6,3 +6,10 @@ http
 js
 localhost
 WIP
+DevOps
+FaaS
+Montpellier
+Morty
+Polytech
+NLU
+NLU's

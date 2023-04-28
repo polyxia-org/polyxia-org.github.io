@@ -1,0 +1,56 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-22.04
+    env:
+      PUBLIC_REPOSITORY: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: PNPM cache
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-next-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx', '**.md', '**.mdx') }}
+          restore-keys: ${{ runner.os }}-next-${{ hashFiles('**/pnpm-lock.yaml') }}-
+          path: |
+            .next/cache
+            node_modules
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 7
+
+      - name: Install Node.js dependencies
+        run: pnpm install
+
+      - name: Build Polyxia documentation
+        run: pnpm build
+
+      - uses: actions/upload-pages-artifact@v1
+        with:
+          path: ./dist
+
+  deploy:
+    name: GH Pages
+    needs: build
+    runs-on: ubuntu-22.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v2
+        id: deployment

@@ -1,5 +1,5 @@
 default: dev
 
 .PHONY: dev
-dev: cli-docs
+dev:
 	pnpm dev

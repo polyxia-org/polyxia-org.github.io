@@ -1,6 +1,6 @@
 # Polyxia documentation
 
-This folder contains the source code of the [Polyxia documentation website](#).
+This folder contains the source code of the [Polyxia documentation website](https://polyxia-org.github.io/).
 
 ## Contributing
 

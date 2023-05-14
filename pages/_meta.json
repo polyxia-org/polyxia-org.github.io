@@ -9,6 +9,6 @@
     "type": "separator",
     "title": "Components"
   },
-  "nlu": "NLU",
-  "assistant": "Assistant"
+  "assistant": "Assistant",
+  "nlu": "NLU"
 }

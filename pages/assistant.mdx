@@ -1,3 +1,85 @@
 # Assistant
 
-WIP
+The assistant is the main entry point to Polyxia. Like [Amazon Alexa](https://developer.amazon.com/en-US/alexa) voice assistant, it is a type of virtual assistant
+that uses natural language processing and speech recognition to respond to voice commands and perform tasks for the user. These assistants are typically
+designed to work with smart home devices and can be used to control various functions such as playing music, setting alarms, making phone calls,
+ordering products online, and even controlling the lighting and temperature in a room.
+
+Our virtual assistant, is a lightweight Python script that can be easily run on a computer or on a [Jetson Nano](#usage-with-a-jetson-nano).
+
+The only tools that you need are a working microphone and speakers.
+
+## Wake up word
+
+> "**Polyxia**, what is the weather like in Paris?"
+
+A wake word, also known as a trigger word or hot word, is a the specific word to activate our voice-activated assistant.
+When the wake word is detected by the system, it begins listening for further commands or queries from the user.
+The wake word is designed to help reduce the amount of processing required by the speech recognition system, as it does not need to be constantly listening
+for commands or input. Instead, it only activates and starts processing input when the wake word is detected.
+
+For the recognition of this wake word, we use the [Mycroft Precise]() Python library that is a lightweight, simple-to-use,
+[RNN](https://datascientest.com/en/recurrent-neural-network-what-is-it) wake word listener.
+The software monitors an audio stream (usually a microphone) and when it recognizes a specific phrase it triggers an event.
+When the software recognizes this phrase it puts the rest of Mycroft's software into command mode and waits for a command from the person using the device.
+It offers the possibility [to train its own wake word](https://github.com/MycroftAI/mycroft-precise/wiki/Training-your-own-wake-word#how-to-train-your-own-wake-word) and that's why we used it to recognize when a user says **"Polyxia"**.
+
+## Speech-to-text
+
+Once the assistant is listening to what the user wants, this is where speech-to-text comes into play. It is responsible for understanding what the user says,
+for knowing when the sentence is finished, for detecting if it is a question or a simple action. This technology recognizes and interprets spoken words, and then
+transcribes them into text that is used to know the user intent.
+
+When the user says **"Polyxia, what's the weather like in Paris?"**, this component will have to convert the voice recorded by the microphone into text
+and will obtain the following sentence **what's the weather like in Paris?**.
+
+To do so, we rely on OpenAI's whisper model. is an automatic speech recognition (ASR) system trained on 680,000 hours of supervised multilingual
+and multitasking data collected from the web. More precisely we use the openai/whisper-base model which has been trained with 74 million parameters.
+
+## Text-to-speech
+
+Once we know what the user has said, we now need to know his intentions and this is where another component makes its appearance, the NLU which stands for
+Natural Language Understanding. This component is not embedded in the assistant, so please refer to [its documentation](/nlu) for more information.
+
+Once the NLU has recognized the user's intent, it will call the appropriate function to perform the user's task.
+
+It returns an object of this type:
+
+```json
+{
+  "intent":"get_weather",
+  "response":"The temperature in Paris is 19°C"
+}
+```
+
+In the end, the assistant simply returns the answer **"The temperature in Paris is 19°C"** to the user in voice form through its speakers.
+
+Using the speech-to-text component we are able to convert this written text into spoken words. The TTS system takes text as an input and uses speech
+synthesis to produce a natural-sounding voice that reads the text aloud.
+
+We rely on google text-to-speech using [gTTS (Google Text-to-Speech)](https://github.com/pndurette/gTTS), a Python library and CLI tool to interface
+with Google Translate's text-to-speech API. We provide the text and it converts it to a wav file which is then played through the user's speakers.
+
+## Usage with a Jetson Nano
+
+Note that this assistant is compatible with Jetson Nano. The Jetson Nano is a small, low-power computer designed for use in embedded systems and artificial
+intelligence (AI) applications. The Jetson Nano features a powerful system-on-a-chip (SoC) that includes a quad-core ARM Cortex-A57 CPU
+and an NVIDIA Maxwell GPU with 128 CUDA cores.
+
+> The jetson nano may be less powerful than a conventional computer, slowdowns in the execution of the assistant may occur.
+> However, it can be an excellent way to make Polyxia portable especially because of its size.
+
+Because Nvidia does not maintain jetson nano, you have to to flash it with a custom image to use newer version of python and pytorch.
+Flash your jetson nano with: [Jetson Nano Ubuntu 20 image](https://github.com/Qengineering/Jetson-Nano-Ubuntu-20-image).
+
+> Note: By default the partition size is 32 GB with this image, feel free to resize it if you need.
+
+The jetson nano does not come standard with equipment such as a microphone and speakers. To communicate with the assistant you will need a headset that can be
+connected via USB. Then simply plug the headset into one of the jetson's USB ports.
+
+To set up the assistant run:
+
+```bash
+make install
+make run
+```

@@ -55,3 +55,8 @@ nano
 Nvidia
 pytorch
 jetson's
+distutils
+dev
+Qengineering
+github
+https

@@ -1,3 +1,85 @@
 # NLU
 
-WIP
+In order to treat user requests we need to successfully understand them.
+This is why we use a custom Neural Language Understanding server it aims to understand, interpret, and respond to natural language input from humans in a way that is meaningful and contextually relevant.
+
+This service is split into two parts, the creation and deletion of skills on one hand and NLU inference to use the relevant skill in another hand.
+A skill is a function or tiny service that is used to fulfill user requests for example a function that creates an alarm or which gives the weather.
+  
+
+## Skills Creation
+Skills content are called and created through [Morty](https://morty-faas.github.io/functions).
+The polyxia NLU only needs to have a description of this skill in order to call it via morty serverless gateway.
+A skill description is created like this:
+```bash
+curl -L '0.0.0.0:8080/v1/skills/' \
+--header 'Content-Type: application/json' \
+--data '{
+  "intent": "get_weather",
+  "utterances": [
+    "weather",
+    "what's the weather like today",
+    "Is it raining?",
+    "Is it sunny outside?"
+  ],
+  "slots": [
+    {
+      "type": "place_name"
+    }
+  ]
+}'
+```
+
+The intent is the name of the skill that will be called.
+Utterances are typical example of what a user could say to invoke this skill.
+At last we have a slot "place_name" to tell the NLU that the user can request this skill with a city or country name to get the weather of this specific place.
+Example: "What the weather like in Paris" will have to call the skill and get the current weather in Paris.
+
+
+These skills are then stored in a [SurrealDB](https://surrealdb.com/) database and can be listed and deleted.
+
+## Retrieve skill 
+The other job of the NLU is to retrieve the correct skill depending on a user query.
+For example, if a user asks "Give me a famous quote" we can't give him the result of the "get_weather" skill.
+
+In order to achieve relevant skill mapping we use a hybrid method between sentence similarity and zero-shot classifier 2 different deep learning models are used to perform both of these tasks.
+
+### Zero-shot intent classifier
+Zero-shot intent classifier is a systems to classify user intents without explicit training on those intents. In traditional intent classification, a model is trained on a specific set of intents and then used to classify new user queries into those known intents. However, in zero-shot intent classification, the model can generalize to unseen intents by leveraging semantic representations and understanding of language.
+
+So this kind of model will receive in input a list of all our skills : ['get_weather', 'set_alarm', 'get_date', ...] as well as the user input "What is today's date".
+And this model will classify the probability of the user input to match each one of these intent name. In this case the model will return 'get_date' with the highest score.
+  
+The model we used is based on a variant of BERT called mDebERTa-V3 [see paper](https://arxiv.org/pdf/2111.09543.pdf) finetuned on the XNLI and MNLI dataset.  
+    
+XNLI Dataset: The XNLI dataset is used to evaluate models' performance on natural language inference across multiple languages. It contains sentence pairs in different languages, along with labels indicating the relationship between the sentences.  
+MNLI Dataset: The MNLI dataset is a benchmark for natural language inference tasks. It consists of sentence pairs from various genres and evaluates models' understanding of sentence relationships (entailment, contradiction, or neutral).  
+Both datasets are widely used to assess models' abilities in language understanding.
+
+
+### Sentence similarity
+Sentence similarity refers to the measurement or assessment of how similar or related two sentences are in terms of their meaning and semantic content.  
+We will give our model the user query and all of our skills utterances and calculate the similarity of the user input with our stored utterances. The one with the highest score will be the most relevant skill which will then be invoked.  
+  
+We used a the MPNet model to calculate the similarity of user input and all our stored utterances.  
+The MPNet (Masked and Permuted Pre-training) model is a variant of the Transformer-based language model designed for pre-training on large amounts of text data. It extends the popular BERT (Bidirectional Encoder Representations from Transformers) architecture by introducing permutation language modeling in addition to masked language modeling used by BERT.
+  
+In masked language modeling, a certain percentage of the input tokens are randomly masked, and the model is trained to predict the original masked tokens. This forces the model to learn contextual representations and understand the relationships between different parts of the input text.  
+  
+Permutation language modeling involves randomly permuting the order of input tokens and training the model to predict the correct permutation. This helps the model capture long-range dependencies and improve its ability to handle sequences of varying lengths.  
+  
+By combining these two pre-training objectives, MPNet learns rich contextual representations that capture both local and global dependencies in the input text. 
+
+
+### NER
+Once the user intent is matched to a relevant skill, we need to detect important entities in the user input using a NER model.  
+NER stands for Named Entity Recognition. It is a subtask of Natural Language Processing (NLP) that involves identifying and classifying named entities in text into predefined categories. Named entities are real-world objects such as persons, organizations, locations, dates, quantities, monetary values, and other proper nouns.  
+The goal of NER is to extract and label these named entities within the text to understand the specific entities mentioned and their corresponding types. For example, given the sentence "Apple Inc. is planning to open a new store in New York next month," a NER system would identify "Apple Inc." as an organization and "New York" as a location.
+
+To perform this NER we used a XLMRoberta model finetuned on [MASSIVE](https://huggingface.co/datasets/qanastek/MASSIVE) dataset.
+Which can detect the following intents `currency_name, personal_info, app_name, list_name, alarm_type, cooking_type, time_zone, media_type, change_amount, transport_type, drink_type, news_topic, artist_name, weather_descriptor, transport_name, player_setting, email_folder, music_album, coffee_type, meal_type, song_name, date, movie_type, movie_name, game_name, business_type, music_descriptor, joke_type, music_genre, device_type, house_place, place_name, sport_type, podcast_name, game_type, timeofday, business_name, time, definition_word, audiobook_author, event_name, general_frequency, relation, color_type, audiobook_name, food_type, person, transport_agency, email_address, podcast_descriptor, order_type, ingredient, transport_descriptor, playlist_name, radio_name`.  
+  
+XLM-RoBERTa follows a similar approach to BERT, utilizing masked language modeling where a portion of the input tokens are masked, and the model is trained to predict the original masked tokens. However, XLM-RoBERTa extends this by training on multilingual data, enabling it to capture language-agnostic representations and transfer knowledge across languages. It also incorporates additional pre-training tasks such as cross-lingual language modeling, where the model is trained to predict tokens in one language using the context of another language.
+
+### Fallback
+In the worst case scenario if a user ask a query that cannot be fulfilled by any of our stored skills. We have a fallback that call a LLM chatbot that will answer the user. 

@@ -18,7 +18,7 @@ When the wake word is detected by the system, it begins listening for further co
 The wake word is designed to help reduce the amount of processing required by the speech recognition system, as it does not need to be constantly listening
 for commands or input. Instead, it only activates and starts processing input when the wake word is detected.
 
-For the recognition of this wake word, we use the [Mycroft Precise]() Python library that is a lightweight, simple-to-use,
+For the recognition of this wake word, we use the [Mycroft Precise](https://github.com/MycroftAI/mycroft-precise#mycroft-precise) Python library that is a lightweight, simple-to-use,
 [RNN](https://datascientest.com/en/recurrent-neural-network-what-is-it) wake word listener.
 The software monitors an audio stream (usually a microphone) and when it recognizes a specific phrase it triggers an event.
 When the software recognizes this phrase it puts the rest of Mycroft's software into command mode and waits for a command from the person using the device.
@@ -33,8 +33,8 @@ transcribes them into text that is used to know the user intent.
 When the user says **"Polyxia, what's the weather like in Paris?"**, this component will have to convert the voice recorded by the microphone into text
 and will obtain the following sentence **what's the weather like in Paris?**.
 
-To do so, we rely on OpenAI's whisper model. is an automatic speech recognition (ASR) system trained on 680,000 hours of supervised multilingual
-and multitasking data collected from the web. More precisely we use the openai/whisper-base model which has been trained with 74 million parameters.
+To do so, we rely on [OpenAI's whisper model](https://openai.com/research/whisper). is an automatic speech recognition (ASR) system trained on 680,000 hours of supervised multilingual
+and multitasking data collected from the web. More precisely we use the [openai/whisper-base](https://huggingface.co/openai/whisper-base) model which has been trained with 74 million parameters.
 
 ## Text-to-speech
 
